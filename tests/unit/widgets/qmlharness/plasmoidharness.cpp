@@ -110,7 +110,14 @@ void PlasmoidHarness::prepareEnvironment()
             qmldir.write("module " + module.toUtf8() + "\n");
         }
     }
-    qputenv("QML_IMPORT_PATH", QString(doubles + QStringLiteral(":" KONVEYOR_SOURCE_DIR "/tests/unit/widgets/launcher/doubles")).toUtf8());
+    // The doubles go first so they shadow the real modules; whatever the
+    // environment already lists (a distro build's QML modules) stays after them.
+    QString importPath = doubles + QStringLiteral(":" KONVEYOR_SOURCE_DIR "/tests/unit/widgets/launcher/doubles");
+    const QString inherited = qEnvironmentVariable("QML_IMPORT_PATH");
+    if (!inherited.isEmpty()) {
+        importPath += QLatin1Char(':') + inherited;
+    }
+    qputenv("QML_IMPORT_PATH", importPath.toUtf8());
     qputenv("XDG_CONFIG_DIRS", QString(root + QStringLiteral("/etc")).toUtf8());
     qputenv("QML_XHR_ALLOW_FILE_READ", "1");
     qputenv("TZ", "UTC");
