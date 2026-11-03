@@ -3,9 +3,11 @@
 A native KDE Plasma 6 widget: a clean local-system dashboard — total + per-core
 **CPU** (split into **P-cores / E-cores** on Intel hybrid, each with a group
 total), frequency, package **power** (Intel RAPL) and **temperature**, **RAM** +
-swap, the **NVIDIA or AMD GPU** (usage, VRAM, temp, power, clocks, fan; on AMD
-APUs the memory bar counts VRAM plus the system RAM the GPU maps through GTT)
-and **network** download/upload, summed over the physical interfaces. Styled to
+swap, the **NVIDIA, AMD or Intel GPU** (usage, VRAM, temp, power, clocks, fan;
+on AMD APUs the memory bar counts VRAM plus the system RAM the GPU maps through
+GTT; Intel GPUs on i915 only report usage and clocks, and their usage is the
+time the GPU is awake, which reads about 10 points high at low load) and
+**network** download/upload, summed over the physical interfaces. Styled to
 match the rest of the suite (Router-Monitor, Log-Monitor, App Portal,
 Process-Mon).
 
