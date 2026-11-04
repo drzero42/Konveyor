@@ -156,6 +156,7 @@ void KonveyorEffect::connectWindowLifecycle()
 void KonveyorEffect::connectWindowState()
 {
     connect(&d->windows, &WindowRegistry::sizeCommitted, this, &KonveyorEffect::handleWindowSizeCommitted);
+    connect(&d->windows, &WindowRegistry::clientRequestedSize, this, &KonveyorEffect::handleClientRequestedSize);
     connect(&d->windows, &WindowRegistry::fullscreenRequested, this, [this](Layout::WindowId id, bool fullscreen) {
         if (d->applier.isApplying()) {
             qCInfo(lcKonveyor) << "konveyor: fullscreen change for window" << id << "=" << fullscreen << "came from Konveyor itself";
@@ -188,22 +189,32 @@ void KonveyorEffect::handleWindowSizeCommitted(Layout::WindowId id, const QSizeF
         scheduleFlush();
         return;
     }
-    const bool acknowledgesRequest = d->applier.isEchoOfAppliedSize(id, size);
+    const bool inFlight = d->applier.consumeInFlightSize(id, size);
+    const bool acknowledgesRequest = inFlight || d->applier.isEchoOfAppliedSize(id, size);
     const bool resizedByUser = !d->applier.isApplying() && window && window->isInteractiveResize();
     const std::optional<Layout::WindowState> state = readEngine().windowState(id);
-    const bool resizedByApp = !d->applier.isApplying() && window && !window->isResizable() && state && !state->isForceResizable;
-    if (!acknowledgesRequest && !resizedByUser && !d->applier.isApplying()) {
-        qCInfo(lcKonveyor) << "konveyor: window" << id << (window ? window->resourceClass() : QString()) << "committed unrequested size"
-                           << size << "resizable =" << (window && window->isResizable()) << "taken as app resize =" << resizedByApp
+    const bool chosenByClient = !acknowledgesRequest && !resizedByUser && !d->applier.isApplying() && window && !window->isResizable();
+    if (chosenByClient) {
+        qCInfo(lcKonveyor) << "konveyor: window" << id << window->resourceClass() << "chose its own size" << size
                            << "target =" << (state ? state->targetFrame : QRectF());
+        changeEngine().setWindowNativeSize(id, size);
+        if (state && !state->isForceResizable) {
+            changeEngine().updateWindowProperties(id, d->windows.propertiesOf(window));
+        }
     }
-    if (resizedByApp) {
-        changeEngine().updateWindowProperties(id, d->windows.propertiesOf(window));
-    }
-    if (acknowledgesRequest || resizedByUser || resizedByApp) {
+    if (acknowledgesRequest || resizedByUser || (chosenByClient && state && !state->isForceResizable)) {
         changeEngine().windowSizeCommitted(id, size);
     }
     scheduleFlush();
+}
+
+void KonveyorEffect::handleClientRequestedSize(Layout::WindowId id, const QSizeF &size)
+{
+    KWin::Window *window = d->windows.windowOf(id);
+    if (window && !window->isResizable() && !d->applier.isApplying() && !d->applier.isEchoOfAppliedSize(id, size)) {
+        changeEngine().setWindowNativeSize(id, size);
+        scheduleFlush();
+    }
 }
 
 void KonveyorEffect::connectDragAndDrop()

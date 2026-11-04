@@ -156,7 +156,7 @@ struct RestorePlacement
 {
     WorkspaceId workspace = 0;
     bool isFloating = false;
-    bool isWindowedFullscreenFallback = false;
+    bool coversLockedOutput = false;
     bool returnsToFloating = false;
     WindowMode requestedSizingMode = WindowMode::Normal;
     std::optional<QSize> savedFloatingSize;
@@ -246,6 +246,7 @@ public:
     void removeWindow(WindowId id);
     void updateWindowProperties(WindowId id, const WindowProperties &properties);
     void windowSizeCommitted(WindowId id, const QSizeF &frameSize);
+    void setWindowNativeSize(WindowId id, const QSizeF &frameSize);
     void setFloatingFrame(WindowId id, const QRectF &frame);
     void activateWindow(WindowId id);
     void setLayoutFocused(bool focused);

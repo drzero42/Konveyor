@@ -6,6 +6,7 @@
 #include <QList>
 #include <QPointer>
 #include <QRectF>
+#include <QSet>
 
 #include <optional>
 
@@ -28,10 +29,12 @@ public:
     void apply(const QList<Layout::WindowState> &states);
     bool isApplying() const;
     bool isEchoOfAppliedSize(Layout::WindowId id, const QSizeF &size) const;
+    bool consumeInFlightSize(Layout::WindowId id, const QSizeF &size);
     bool isEchoOfAppliedFrame(Layout::WindowId id, const QRectF &frame) const;
     void forget(Layout::WindowId id);
 
 private:
+    bool keepsStrictSize(KWin::Window *window, const Layout::WindowState &state, const QRectF &frame);
     static QRectF frameFor(const Layout::WindowState &state);
     static QRectF placedFrame(const Layout::WindowState &state);
     void applyGeometry(KWin::Window *window, const QRectF &frame, const std::optional<QSizeF> &requestedSize, bool tiled, bool allowResize,
@@ -59,6 +62,8 @@ private:
 
     const WindowRegistry &m_windows;
     QHash<Layout::WindowId, QRectF> m_appliedFrames;
+    QHash<Layout::WindowId, QList<QSizeF>> m_inFlightSizes;
+    QSet<Layout::WindowId> m_strictUntilSettled;
     QHash<Layout::WindowId, double> m_overriddenOpacity;
     QHash<Layout::WindowId, LoggedTarget> m_loggedTargets;
     QHash<Layout::WindowId, QPointer<KWin::Window>> m_parked;
